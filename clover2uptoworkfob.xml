@@ -1,14 +1,19 @@
 <?xml version='1.0'?>
 <!DOCTYPE xslt:transform>
+<!-- XSLT Stylesheet based on design at https://uptowork.com/blog/how-to-write-a-cover-letter
+     transforms: CloverML to XSL:FO.
+     dated: 2018-02-06
+     -->
 <xslt:transform
-	xmlns:xslt='http://www.w3.org/1999/XSL/Transform' version='1.1'
+	xmlns:xslt='http://www.w3.org/1999/XSL/Transform' version='3.0'
 	xmlns:clv='https://github.com/lduran2/clover/blob/master/cloverml#'
 	xmlns:dbk='http://docbook.org/ns/docbook'
 	xmlns:xlink='http://www.w3.org/1999/xlink'
 	xmlns:fob='http://www.w3.org/1999/XSL/Format'
+	xmlns:xpfn='http://www.w3.org/2005/xpath-functions'
 >
 	<xslt:template match='clv:coverletter'>
-		<fob:root xmlns:fob='http://www.w3.org/1999/XSL/Format'>
+		<fob:root>
 			<fob:layout-master-set>
 				<fob:simple-page-master master-name='letter'
 					page-width='215.9mm' page-height='279.4mm'
@@ -24,9 +29,10 @@
 			</fob:layout-master-set>
 
 			<fob:page-sequence master-reference='letter'>
+				<xslt:apply-templates select='document(clv:info/clv:applicant-ref/@xlink:href)'/>
 				<fob:flow flow-name='xsl-region-body'>
 					<fob:block-container
-						color='#373b46' font-size='11pt' line-height='16.5pt' font-family='times, "Times New Roman", serif'
+						color='#373b46' font-size='11pt' line-height='16.5pt' font-family="times, 'Times New Roman', serif"
 						text-align='justify' hyphenate='true' language='en'
 					>
 						<xslt:apply-templates/>
@@ -34,6 +40,166 @@
 				</fob:flow>
 			</fob:page-sequence>
 		</fob:root>
+	</xslt:template>
+
+	<xslt:template match='clv:applicant'>
+		<fob:static-content flow-name='header'>
+			<fob:block-container
+				margin='5.9mm 5.2mm'
+				color='white' font-size='10pt' font-family='helvetica, arial, sans-serif'
+			>
+				<fob:block-container
+					margin='0mm 0mm'
+				>
+					<fob:block
+						font-weight='bold' font-size='1.728em'
+						space-after='0.5em'
+					>
+						<xslt:apply-templates
+							select='dbk:personname'
+						/>
+					</fob:block>
+					<fob:block
+						font-size='1.2em'
+					>
+						<xslt:apply-templates
+							select='dbk:affiliation/dbk:jobtitle'
+						/>
+					</fob:block>
+				</fob:block-container>
+			</fob:block-container>
+		</fob:static-content>
+		<xslt:apply-templates select='dbk:address'/>
+	</xslt:template>
+
+	<xslt:template match='clv:applicant/dbk:address'>
+		<fob:static-content flow-name='sidebar'>
+			<fob:block-container
+				margin='5.9mm 5.2mm'
+				color='#373b46' font-size='10pt' line-height='16.5pt' font-family='helvetica, arial, sans-serif'
+			>
+				<fob:block-container
+					margin='0mm'
+					font-size='10pt'
+				>
+					<fob:block
+						font-weight='bold' font-size='1.2em'
+						space-after='15.5pt'
+						border-bottom='1pt solid #d5d5d5'
+					>
+						Contact Information
+					</fob:block>
+
+					<fob:block-container
+						space-after='16.5pt'
+					>
+						<fob:block
+							font-weight='bold'
+						>
+							Address
+						</fob:block>
+						<xslt:apply-templates select='*[self::dbk:street | self::dbk:otheraddr]'/>
+						<fob:block>
+							<xslt:apply-templates select='*[self::dbk:city | self::dbk:state | self::dbk:postcode]'/>
+						</fob:block>
+					</fob:block-container>
+
+					<fob:block-container
+						space-after='16.5pt'
+					>
+						<fob:block
+							font-weight='bold'
+						>
+							Phone
+						</fob:block>
+						<fob:block>
+							<fob:basic-link>
+								<xslt:attribute name='external-destination'>url('tel:+1-<xslt:apply-templates select='dbk:phone'/>')</xslt:attribute>
+								<xslt:apply-templates select='dbk:phone'/>
+							</fob:basic-link>
+						</fob:block>
+					</fob:block-container>
+
+					<fob:block-container
+						space-after='16.5pt'
+					>
+						<fob:block
+							font-weight='bold'
+						>
+							E-mail
+						</fob:block>
+						<fob:block>
+							<fob:basic-link>
+								<xslt:attribute name='external-destination'>url('mailto:<xslt:apply-templates select='dbk:email'/>')</xslt:attribute>
+								<xslt:apply-templates select='dbk:email'/>
+							</fob:basic-link>
+						</fob:block>
+					</fob:block-container>
+
+					<!-- if there exists one non-LinkedIn URI -->
+					<xslt:if test="child::dbk:uri[not(starts-with(., 'https://www.linkedin.com/'))]">
+						<fob:block-container
+							space-after='16.5pt'
+						>
+							<fob:block
+								font-weight='bold'
+							>
+								Professional websites
+							</fob:block>
+							<xslt:for-each select="dbk:uri[not(starts-with(., 'https://www.linkedin.com/in/'))]">
+								<fob:block>
+									<fob:basic-link>
+										<xslt:attribute name='external-destination'>url('<xslt:apply-templates select='.'/>')</xslt:attribute>
+										<xslt:apply-templates select='.'/>
+									</fob:basic-link>
+								</fob:block>
+							</xslt:for-each>
+						</fob:block-container>
+					</xslt:if>
+
+					<!-- if there exists one LinkedIn URI -->
+					<xslt:if test="child::dbk:uri[starts-with(., 'https://www.linkedin.com/')]">
+						<fob:block-container
+							space-after='16.5pt'
+						>
+							<fob:block
+								font-weight='bold'
+							>
+								LinkedIn
+							</fob:block>
+							<xslt:for-each select="dbk:uri[starts-with(., 'https://www.linkedin.com/in/')]">
+								<fob:block>
+									<fob:basic-link>
+										<xslt:attribute name='external-destination'>url('<xslt:apply-templates select='.'/>')</xslt:attribute>
+										<xslt:value-of select="substring-after(substring(., 0, string-length(.)), 'https://www.')"/>
+									</fob:basic-link>
+								</fob:block>
+							</xslt:for-each>
+						</fob:block-container>
+					</xslt:if>
+				</fob:block-container>
+			</fob:block-container>
+		</fob:static-content>
+	</xslt:template>
+
+	<xslt:template match='dbk:address/*[self::dbk:street | self::dbk:otheraddr]'>
+		<fob:block>
+			<xslt:apply-templates/>
+		</fob:block>
+	</xslt:template>
+
+	<xslt:template match='dbk:city'>
+		<xslt:value-of select="concat(., ', ')"/>
+	</xslt:template>
+
+	<xslt:template match='dbk:state | dbk:firstname'>
+		<xslt:value-of select="concat(., ' ')"/>
+	</xslt:template>
+
+	<xslt:template match='dbk:phone'>
+		<xslt:value-of
+			select="concat(substring-before(., '.'), '-', substring-before(substring-after(., '.'), '.'), '-', substring-after(substring-after(., '.'), '.'))"
+		/>
 	</xslt:template>
 
 	<xslt:template match='clv:document'>
@@ -44,36 +210,39 @@
 		</fob:block>
 	</xslt:template>
 
-	<xslt:template match='dbk:city | dbk:state'>
-		<xslt:value-of select='concat(., ", ")'/>
+	<!-- format dates to MM/DD/YYYY format from YYYY-MM-DD -->
+	<xslt:template match='dbk:date'>
+		<xslt:value-of
+			select="concat(substring-before(substring-after(., '-'), '-'), '/', substring-after(substring-after(., '-'), '-'), '/', substring-before(., '-'))"
+		/>
 	</xslt:template>
 
-	<xslt:template match='clv:recipient'>
+	<!-- recipient with at least one personname -->
+	<xslt:template match='clv:recipient[count(child::dbk:personname) > 0]'>
 		<fob:block space-after='16.5pt'>
-			<xslt:if test='child::dbk:personname'>
-				<fob:block font-weight='bold'>
-					<xslt:apply-templates select='dbk:personname'/>
-				</fob:block>
-				<fob:block>
-					<xslt:apply-templates select='dbk:affiliation/dbk:jobtitle'/>
-				</fob:block>
-			</xslt:if>
-			<xslt:otherwise>
-				<xslt:attribute name='font-weight'>
-					bold
-				</xslt:attribute>
-				<xslt:apply-templates select='dbk:affiliation/dbk:orgdiv'/>
-			</xslt:otherwise>
+			<fob:block font-weight='bold'>
+				<xslt:apply-templates select='dbk:personname'/>
+			</fob:block>
+			<fob:block>
+				<xslt:apply-templates select='dbk:affiliation/dbk:jobtitle'/>
+			</fob:block>
 		</fob:block>
 		<xslt:apply-templates select='dbk:affiliation'/>
 		<fob:block space-after='16.5pt'>
 			Dear
-			<xslt:if test='child::dbk:personname'>
-				<xslt:value-of select='concat(dbk:personname/dbk:firstname/., ",")'/>
-			</xslt:if>
-			<xslt:otherwise>
-				<xslt:value-of select='concat(dbk:affiliation/dbk:jobtitle/., ",")'/>
-			</xslt:otherwise>
+			<xslt:value-of select="concat(dbk:personname/dbk:firstname/., ',')"/>
+		</fob:block>
+	</xslt:template>
+
+	<!-- recipient with at most no personnames -->
+	<xslt:template match='clv:recipient[count(child::dbk:personname) &lt;= 0]'>
+		<fob:block space-after='16.5pt' font-weight='bold'>
+			<xslt:apply-templates select='dbk:affiliation/dbk:orgdiv'/>
+		</fob:block>
+		<xslt:apply-templates select='dbk:affiliation'/>
+		<fob:block space-after='16.5pt'>
+			Dear
+			<xslt:value-of select="concat(dbk:affiliation/dbk:jobtitle/., ',')"/>
 		</fob:block>
 	</xslt:template>
 
@@ -83,12 +252,6 @@
 				<xslt:apply-templates select='dbk:orgname'/>
 			</fob:block>
 			<xslt:apply-templates select='dbk:address'/>
-		</fob:block>
-	</xslt:template>
-
-	<xslt:template match='dbk:affiliation/dbk:address/*[not(self::dbk:city | self::dbk:state | self::dbk:postcode)]'>
-		<fob:block>
-			<xslt:apply-templates/>
 		</fob:block>
 	</xslt:template>
 
@@ -121,13 +284,12 @@
 
 	<xslt:template match='clv:closing'>
 		<fob:block>
+			<!-- bottom margin only if postscript follows -->
 			<xslt:if test='following-sibling::clv:postscript'>
-				<xslt:attribute name='space-after'>
-					16.5pt
-				</xslt:attribute>
+				<xslt:attribute name='space-after'>16.5pt</xslt:attribute>
 			</xslt:if>
 			<fob:block>
-				<xslt:apply-templates/>
+				<xslt:value-of select="concat(., ', ')"/>
 			</fob:block>
 			<fob:block>
 				<xslt:apply-templates
@@ -142,5 +304,8 @@
 			P.S<fob:inline letter-spacing='1pt'>.—</fob:inline><xslt:apply-templates/>
 		</fob:block>
 	</xslt:template>
+
+	<!-- trim all text nodes in the postscript: if needed, edit to ignore inline elements -->
+	<xslt:template match='clv:postscript//text()'><xslt:value-of select='normalize-space(.)'/></xslt:template>
 
 </xslt:transform>
