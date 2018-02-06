@@ -1,0 +1,146 @@
+<?xml version='1.0'?>
+<!DOCTYPE xslt:transform>
+<xslt:transform
+	xmlns:xslt='http://www.w3.org/1999/XSL/Transform' version='1.1'
+	xmlns:clv='https://github.com/lduran2/clover/blob/master/cloverml#'
+	xmlns:dbk='http://docbook.org/ns/docbook'
+	xmlns:xlink='http://www.w3.org/1999/xlink'
+	xmlns:fob='http://www.w3.org/1999/XSL/Format'
+>
+	<xslt:template match='clv:coverletter'>
+		<fob:root xmlns:fob='http://www.w3.org/1999/XSL/Format'>
+			<fob:layout-master-set>
+				<fob:simple-page-master master-name='letter'
+					page-width='215.9mm' page-height='279.4mm'
+				>
+					<fob:region-body margin='32.1mm 68.2mm 5.9mm 5.2mm'/>
+					<fob:region-before region-name='header' precedence='true'
+						extent='26.2mm' background-color='#373b46'
+					/>
+					<fob:region-end region-name='sidebar'
+						extent='63.0mm' background-color='#f4f4f4'
+					/>
+				</fob:simple-page-master>
+			</fob:layout-master-set>
+
+			<fob:page-sequence master-reference='letter'>
+				<fob:flow flow-name='xsl-region-body'>
+					<fob:block-container
+						color='#373b46' font-size='11pt' line-height='16.5pt' font-family='times, "Times New Roman", serif'
+						text-align='justify' hyphenate='true' language='en'
+					>
+						<xslt:apply-templates/>
+					</fob:block-container>
+				</fob:flow>
+			</fob:page-sequence>
+		</fob:root>
+	</xslt:template>
+
+	<xslt:template match='clv:document'>
+		<fob:block
+			space-after='16.5pt'
+		>
+			<xslt:apply-templates/>
+		</fob:block>
+	</xslt:template>
+
+	<xslt:template match='dbk:city | dbk:state'>
+		<xslt:value-of select='concat(., ", ")'/>
+	</xslt:template>
+
+	<xslt:template match='clv:recipient'>
+		<fob:block space-after='16.5pt'>
+			<xslt:if test='child::dbk:personname'>
+				<fob:block font-weight='bold'>
+					<xslt:apply-templates select='dbk:personname'/>
+				</fob:block>
+				<fob:block>
+					<xslt:apply-templates select='dbk:affiliation/dbk:jobtitle'/>
+				</fob:block>
+			</xslt:if>
+			<xslt:otherwise>
+				<xslt:attribute name='font-weight'>
+					bold
+				</xslt:attribute>
+				<xslt:apply-templates select='dbk:affiliation/dbk:orgdiv'/>
+			</xslt:otherwise>
+		</fob:block>
+		<xslt:apply-templates select='dbk:affiliation'/>
+		<fob:block space-after='16.5pt'>
+			Dear
+			<xslt:if test='child::dbk:personname'>
+				<xslt:value-of select='concat(dbk:personname/dbk:firstname/., ",")'/>
+			</xslt:if>
+			<xslt:otherwise>
+				<xslt:value-of select='concat(dbk:affiliation/dbk:jobtitle/., ",")'/>
+			</xslt:otherwise>
+		</fob:block>
+	</xslt:template>
+
+	<xslt:template match='dbk:affiliation'>
+		<fob:block space-after='16.5pt'>
+			<fob:block>
+				<xslt:apply-templates select='dbk:orgname'/>
+			</fob:block>
+			<xslt:apply-templates select='dbk:address'/>
+		</fob:block>
+	</xslt:template>
+
+	<xslt:template match='dbk:affiliation/dbk:address/*[not(self::dbk:city | self::dbk:state | self::dbk:postcode)]'>
+		<fob:block>
+			<xslt:apply-templates/>
+		</fob:block>
+	</xslt:template>
+
+	<xslt:template match='dbk:para|dbk:formalpara|dbk:simpara'>
+		<fob:block space-after='16.5pt'>
+			<xslt:apply-templates/>
+		</fob:block>
+	</xslt:template>
+
+	<xslt:template match='dbk:itemizedlist'>
+		<fob:list-block margin-top='16.5pt' margin-left='6.35mm'>
+			<xslt:apply-templates/>
+		</fob:list-block>
+	</xslt:template>
+
+	<xslt:template match='dbk:listitem'>
+		<fob:list-item>
+			<fob:list-item-label margin-left='-6.35mm'>
+				<fob:block>
+					•
+				</fob:block>
+			</fob:list-item-label>
+			<fob:list-item-body>
+				<fob:block>
+					<xslt:apply-templates/>
+				</fob:block>
+			</fob:list-item-body>
+		</fob:list-item>
+	</xslt:template>
+
+	<xslt:template match='clv:closing'>
+		<fob:block>
+			<xslt:if test='following-sibling::clv:postscript'>
+				<xslt:attribute name='space-after'>
+					16.5pt
+				</xslt:attribute>
+			</xslt:if>
+			<fob:block>
+				<xslt:apply-templates/>
+			</fob:block>
+			<fob:block>
+				<xslt:apply-templates
+					select='document(ancestor::clv:coverletter/clv:info/clv:applicant-ref/@xlink:href)/clv:applicant/dbk:personname'
+				/>
+			</fob:block>
+		</fob:block>
+	</xslt:template>
+
+	<xslt:template match='clv:postscript'>
+		<fob:block>
+			P.S<fob:inline letter-spacing='1pt'>.—</fob:inline><xslt:apply-templates/>
+		</fob:block>
+	</xslt:template>
+
+</xslt:transform>
